@@ -7,7 +7,7 @@
 # - Do NOT send the token to anyone.
 # - CHAT_ID is already set to the ID you provided.
 # - This program uses public Binance market data only; no Binance API key is needed.
-
+import os
 import asyncio
 import json
 import math
@@ -16,10 +16,10 @@ from datetime import datetime, timezone
 
 import aiohttp
 import websockets
+import os
 
-TELEGRAM_BOT_TOKEN = "PUT_YOUR_NEW_TELEGRAM_BOT_TOKEN_HERE"
-CHAT_ID = "1391540525"
-
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 FACTOR = 2.0
 ATR_LEN = 20
 RSI_LEN = 14
