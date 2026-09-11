@@ -18,7 +18,7 @@ import aiohttp
 import websockets
 import os
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+TELEGRAM_BOT_TOKEN = "".join(os.getenv("TELEGRAM_BOT_TOKEN", "").split())
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 FACTOR = 2.0
 ATR_LEN = 20
