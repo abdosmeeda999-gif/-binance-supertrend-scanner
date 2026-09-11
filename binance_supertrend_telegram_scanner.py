@@ -267,7 +267,7 @@ async def main():
         print("Loading Binance USD-M perpetual symbols...")
         symbols = await get_symbols(session)
         print(f"Found {len(symbols)} USDT perpetual symbols.")
-INTERVALS = ["1h", "30m"]
+        INTERVALS = ["1h", "30m"]
         states = {}
         histories = {}
 
