@@ -213,9 +213,9 @@ async def get_symbols(session):
     return sorted(symbols)
 
 
-async def get_history(session, symbol):
+async def get_history(session, symbol, interval):
     url = f"{BINANCE_REST}/fapi/v1/klines"
-    params = {"symbol": symbol.upper(), "interval": "1h", "limit": HISTORY_LIMIT}
+    params = {"symbol": symbol.upper(), "interval": interval, "limit": HISTORY_LIMIT}
     async with session.get(url, params=params, timeout=30) as r:
         r.raise_for_status()
         raw = await r.json()
@@ -250,11 +250,11 @@ async def send_telegram(session, text):
             print("Telegram error:", r.status, body)
 
 
-def signal_text(symbol, new_dir):
+def signal_text(symbol, new_dir, interval):
     name = symbol.upper()
     if new_dir == -1:
-        return f"🟢 {name} — GREEN START\nRSI Adjusted SuperTrend\n⏱ 1H"
-    return f"🔴 {name} — RED START\nRSI Adjusted SuperTrend\n⏱ 1H"
+        return f"🟢 {name} — GREEN START\nRSI Adjusted SuperTrend\n⏱ {interval.upper()}"
+    return f"🔴 {name} — RED START\nRSI Adjusted SuperTrend\n⏱ {interval.upper()}"
 
 
 async def main():
@@ -267,32 +267,36 @@ async def main():
         print("Loading Binance USD-M perpetual symbols...")
         symbols = await get_symbols(session)
         print(f"Found {len(symbols)} USDT perpetual symbols.")
-
+INTERVALS = ["1h", "30m"]
         states = {}
         histories = {}
 
         # Initial history: establish the current direction without sending an alert.
         sem = asyncio.Semaphore(20)
 
-        async def load_one(sym):
+        async def load_one(sym, interval):
             async with sem:
                 try:
-                    candles = await get_history(session, sym)
+                    candles = await get_history(session, sym, interval)
                     if len(candles) >= 60:
                         d, _ = calculate_direction(candles)
-                        histories[sym] = candles
-                        states[sym] = int(d)
+                        histories[(sym, interval)] = candles
+                        states[(sym, interval)] = int(d)
                 except Exception as e:
                     print("History error", sym, e)
 
-        await asyncio.gather(*(load_one(s) for s in symbols))
-        print(f"Initialized {len(states)} symbols. Waiting for confirmed 1H candles...")
-        await send_telegram(session, f"✅ Binance SuperTrend Scanner Started\n📊 Monitoring {len(states)} USDT Perpetuals\n⏱ Timeframe: 1H")
+        await asyncio.gather(*(load_one(s, interval) for interval in INTERVALS for s in symbols))
+        print(f"Initialized {len(symbols)} symbols. Waiting for confirmed 1H + 30M candles...")
+        await send_telegram(session, f"✅ Binance SuperTrend Scanner Started\n📊 Monitoring {len(symbols)} USDT Perpetuals\n⏱ Timeframes: 1H + 30M")
         # Split streams so each WebSocket URL stays reasonably small.
         chunks = [symbols[i:i + STREAM_CHUNK] for i in range(0, len(symbols), STREAM_CHUNK)]
 
         async def stream_worker(chunk):
-            streams = "/".join(f"{s}@kline_1h" for s in chunk)
+            streams = "/".join(
+    f"{s}@kline_{interval}"
+    for s in chunk
+    for interval in INTERVALS
+)
             url = f"{BINANCE_WS}?streams={streams}"
 
             while True:
@@ -316,6 +320,7 @@ async def main():
                                 continue
 
                             sym = k["s"].lower()
+                            interval = k["i"]
                             candle = [
                                 int(k["t"]),
                                 float(k["o"]),
@@ -324,28 +329,28 @@ async def main():
                                 float(k["c"]),
                             ]
 
-                            hist = histories.get(sym, [])
+                            hist = histories.get((sym, interval), [])
                             if hist and hist[-1][0] == candle[0]:
                                 hist[-1] = candle
                             else:
                                 hist.append(candle)
 
-                            histories[sym] = hist[-HISTORY_LIMIT:]
+                            histories[(sym, interval)] = hist[-HISTORY_LIMIT:]
 
                             if len(hist) < 60:
                                 continue
 
                             new_dir, _ = calculate_direction(hist)
                             new_dir = int(new_dir)
-                            old_dir = states.get(sym)
+                            old_dir = states.get((sym, interval))
 
                             if old_dir is None:
-                                states[sym] = new_dir
+                                states[(sym, interval)] = new_dir
                                 continue
 
                             if new_dir != old_dir:
-                                states[sym] = new_dir
-                                text = signal_text(sym, new_dir)
+                                states[(sym, interval)] = new_dir
+                                text = signal_text(sym, new_dir, interval)
                                 print(datetime.now(timezone.utc).isoformat(), text)
                                 await send_telegram(session, text)
 
