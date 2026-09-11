@@ -287,7 +287,7 @@ async def main():
 
         await asyncio.gather(*(load_one(s) for s in symbols))
         print(f"Initialized {len(states)} symbols. Waiting for confirmed 1H candles...")
-await send_telegram(session, f"✅ Binance SuperTrend Scanner Started\n📊 Monitoring {len(states)} USDT Perpetuals\n⏱ Timeframe: 1H")
+        await send_telegram(session, f"✅ Binance SuperTrend Scanner Started\n📊 Monitoring {len(states)} USDT Perpetuals\n⏱ Timeframe: 1H")
         # Split streams so each WebSocket URL stays reasonably small.
         chunks = [symbols[i:i + STREAM_CHUNK] for i in range(0, len(symbols), STREAM_CHUNK)]
 
