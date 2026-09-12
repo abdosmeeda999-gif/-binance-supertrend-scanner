@@ -311,6 +311,7 @@ async def main():
                         print(f"WebSocket connected: {len(chunk)} symbols")
                         async for raw in ws:
                             msg = json.loads(raw)
+                            print("DEBUG RAW:", str(msg)[:300])
                             data = msg.get("data", {})
                             if data.get("e") != "kline":
                                 continue
