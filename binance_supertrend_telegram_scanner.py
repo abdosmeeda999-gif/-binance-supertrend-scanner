@@ -272,7 +272,7 @@ async def main():
         histories = {}
 
         # Initial history: establish the current direction without sending an alert.
-        sem = asyncio.Semaphore(20)
+        sem = asyncio.Semaphore(5)
 
         async def load_one(sym, interval):
             async with sem:
