@@ -321,6 +321,8 @@ async def main():
 
                             sym = k["s"].lower()
                             interval = k["i"]
+                            if sym == "btcusdt":
+                            print(f"DEBUG CLOSED: {sym.upper()} {interval}")
                             candle = [
                                 int(k["t"]),
                                 float(k["o"]),
