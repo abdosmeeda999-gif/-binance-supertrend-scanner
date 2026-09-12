@@ -272,11 +272,12 @@ async def main():
         histories = {}
 
         # Initial history: establish the current direction without sending an alert.
-        sem = asyncio.Semaphore(5)
+        sem = asyncio.Semaphore(1)
 
         async def load_one(sym, interval):
             async with sem:
                 try:
+                    await asyncio.sleep(0.2) 
                     candles = await get_history(session, sym, interval)
                     if len(candles) >= 60:
                         d, _ = calculate_direction(candles)
