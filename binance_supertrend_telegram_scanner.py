@@ -297,7 +297,7 @@ async def main():
     for s in chunk
     for interval in INTERVALS
 )
-            url = f"{BINANCE_WS}?streams={streams}"
+            url = f"wss://fstream.binance.com/stream?streams={streams}"
 
             while True:
                 try:
