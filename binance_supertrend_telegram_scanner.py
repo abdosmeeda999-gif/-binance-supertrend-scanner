@@ -29,7 +29,7 @@ BINANCE_REST = "https://fapi.binance.com"
 BINANCE_WS = "wss://fstream.binance.com/stream"
 
 HISTORY_LIMIT = 120
-STREAM_CHUNK = 200
+STREAM_CHUNK = 50
 
 
 def rma(values, length):
